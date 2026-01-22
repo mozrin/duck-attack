@@ -1,0 +1,33 @@
+# Duck Attack Game Configuration
+
+# Global Game Settings
+game:
+  debug_mode: false
+
+# Grandma (Player) Settings
+grandma:
+  max_health: 100
+  start_health: 100
+  health_regen_rate: 0.0
+  stamina: 100
+  stamina_regen: 5
+  move_speed: 0
+
+# Duck AI Settings
+duck:
+  base_speed: 50.0
+  flee_speed_multiplier: 2.0
+  spawn_rate_min: 1.5
+  spawn_rate_max: 3.0
+  damage_to_player: 20
+
+  # Timers (seconds)
+  eat_duration: 2.0
+  stun_duration: 3.0
+
+# Bread (Weapon) Settings
+bread:
+  lifespan: 5.0
+  fade_duration: 1.0
+  throw_speed: 300.0
+  collision_radius: 10.0

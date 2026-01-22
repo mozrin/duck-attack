@@ -2,14 +2,17 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
+import 'package:duck_attack/game/config.dart';
+
 class BreadcrumbLureComponent extends PositionComponent {
   BreadcrumbLureComponent({required Vector2 position})
     : super(size: Vector2(20, 20), position: position, anchor: Anchor.center) {
     add(RectangleHitbox());
+    timeLeft = GameConfig.breadLifespan;
   }
 
-  double timeLeft = 5.0;
-  static const double fadeDuration = 1.0; // Last 1 second is fade out
+  late double timeLeft;
+  double get fadeDuration => GameConfig.breadFadeDuration;
 
   @override
   void update(double dt) {

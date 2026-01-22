@@ -29,7 +29,7 @@ class DuckComponent extends PositionComponent
   // Stun logic
   bool isStunned = false;
   double _stunTimer = 0.0;
-  final double _stunDuration = 3.0;
+  final double _stunDuration = GameConfig.duckStunDuration;
 
   void stun() {
     isStunned = true;
@@ -155,7 +155,7 @@ class DuckComponent extends PositionComponent
     super.onCollision(intersectionPoints, other);
     if (other is GrandmaComponent) {
       removeFromParent();
-      game.takeDamage(20);
+      game.takeDamage(GameConfig.duckDamage);
     }
   }
 
