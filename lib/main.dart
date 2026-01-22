@@ -1,11 +1,16 @@
 import 'package:duck_attack/game/duck_attack_game.dart';
+import 'package:duck_attack/game/ui/game_over_dialog.dart';
 import 'package:duck_attack/game/ui/hud.dart';
 import 'package:duck_attack/game/ui/splash_screen.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+
 void main() {
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   runApp(const ProviderScope(child: DuckAttackApp()));
 }
 
@@ -37,6 +42,9 @@ class GameScreen extends ConsumerWidget {
         overlayBuilderMap: {
           'hud': (BuildContext context, DuckAttackGame game) {
             return const Hud();
+          },
+          'game_over': (BuildContext context, DuckAttackGame game) {
+            return GameOverDialog(game: game);
           },
         },
         initialActiveOverlays: const ['hud'],

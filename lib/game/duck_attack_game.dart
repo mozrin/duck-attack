@@ -1,5 +1,6 @@
 import 'package:duck_attack/game/components/breadcrumb_lure.dart';
 import 'package:duck_attack/game/components/breadcrumb_shot.dart';
+import 'package:duck_attack/game/components/duck.dart';
 import 'package:duck_attack/game/components/grandma.dart';
 import 'package:duck_attack/game/state/game_state.dart';
 import 'package:duck_attack/game/systems/wave/wave_director.dart';
@@ -46,5 +47,30 @@ class DuckAttackGame extends FlameGame
 
   void takeDamage(int damage) {
     ref.read(gameStateProvider.notifier).takeDamage(damage);
+    if (ref.read(gameStateProvider).health <= 0) {
+      gameOver();
+    }
+  }
+
+  void gameOver() {
+    pauseEngine();
+    overlays.add('game_over');
+  }
+
+  void reset() {
+    overlays.remove('game_over');
+    ref.read(gameStateProvider.notifier).reset();
+
+    // Clear enemies and shots
+    children.whereType<DuckComponent>().forEach((d) => d.removeFromParent());
+    children.whereType<BreadcrumbShotComponent>().forEach(
+      (s) => s.removeFromParent(),
+    );
+    children.whereType<BreadcrumbLureComponent>().forEach(
+      (l) => l.removeFromParent(),
+    );
+    children.whereType<WaveDirector>().forEach((w) => w.reset());
+
+    resumeEngine();
   }
 }

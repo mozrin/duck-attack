@@ -44,4 +44,8 @@ class WaveDirector extends Component with HasGameReference<DuckAttackGame> {
 
     game.add(DuckComponent(startPosition: spawnPos));
   }
+
+  void reset() {
+    _spawnTimer = 0.0;
+  }
 }

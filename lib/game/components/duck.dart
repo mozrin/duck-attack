@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'package:duck_attack/game/config.dart';
+import 'package:duck_attack/game/components/breadcrumb_lure.dart';
 import 'package:duck_attack/game/components/breadcrumb_shot.dart';
 import 'package:duck_attack/game/components/grandma.dart';
 import 'package:duck_attack/game/duck_attack_game.dart';
@@ -7,7 +10,7 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-enum DuckState { seekBench, seekLure, eat, flee, idle }
+enum DuckState { seekBench, seekLure, eat, flee, idle, stunned }
 
 class DuckComponent extends PositionComponent
     with HasGameReference<DuckAttackGame>, CollisionCallbacks {
@@ -24,6 +27,18 @@ class DuckComponent extends PositionComponent
   Vector2 velocity = Vector2.zero();
   late Node behaviorTree;
 
+  // Stun logic
+  bool isStunned = false;
+  double _stunTimer = 0.0;
+  final double _stunDuration = 3.0;
+
+  void stun() {
+    isStunned = true;
+    _stunTimer = _stunDuration;
+    state = DuckState.stunned;
+    velocity = Vector2.zero(); // Stop immediately
+  }
+
   @override
   Future<void> onLoad() async {
     // TODO: Load duck sprite
@@ -31,13 +46,90 @@ class DuckComponent extends PositionComponent
     add(RectangleHitbox());
   }
 
+  // Eating/Fullness Logic
+  int crumbsEaten = 0;
+  final int maxCrumbs = 1; // Full after 1 crumb
+  double _eatTimer = 0.0;
+  final double _eatDuration = GameConfig.duckEatDuration;
+
   Node _buildBehaviorTree() {
     return Selector([
-      // Priority 1: Seek Bench (Default for now)
+      // Priority 0: Stunned
+      ConditionNode(() => isStunned),
+
+      // ... (Rest of tree is fine) ...
+      // Priority 1: Leave if Full
+      Sequence([
+        ConditionNode(() => crumbsEaten >= maxCrumbs),
+        ActionNode((dt) {
+          state = DuckState.flee;
+          final center = game.size / 2;
+          final fleeVector = (position - center).normalized();
+          velocity =
+              fleeVector * GameConfig.duckSpeed * GameConfig.duckFleeMultiplier;
+
+          if (!game.camera.visibleWorldRect.contains(position.toOffset())) {
+            removeFromParent();
+            game.addScore(50);
+          }
+          return NodeStatus.success;
+        }),
+      ]),
+
+      // Priority 2: Eat (Busy Eating)
+      Sequence([
+        ConditionNode(() => _eatTimer > 0),
+        ActionNode((dt) {
+          state = DuckState.eat;
+          velocity = Vector2.zero();
+          _eatTimer -= dt;
+          return NodeStatus.success;
+        }),
+      ]),
+
+      // Priority 3: Seek Food
+      Sequence([
+        ActionNode((dt) {
+          final lures = game.children.whereType<BreadcrumbLureComponent>();
+          if (lures.isEmpty) return NodeStatus.failure;
+
+          BreadcrumbLureComponent? nearest;
+          double minDst = double.infinity;
+
+          for (final lure in lures) {
+            final dst = position.distanceTo(lure.position);
+            if (dst < minDst) {
+              minDst = dst;
+              nearest = lure;
+            }
+          }
+
+          if (nearest != null) {
+            if (minDst < size.x / 2 + nearest.size.x / 2) {
+              nearest.removeFromParent();
+              crumbsEaten++;
+              _eatTimer = _eatDuration;
+              return NodeStatus.success;
+            }
+
+            state = DuckState.seekLure;
+            velocity = Steering.seek(
+              position,
+              nearest.position,
+              GameConfig.duckSpeed,
+            );
+            return NodeStatus.success;
+          }
+
+          return NodeStatus.failure;
+        }),
+      ]),
+
+      // Priority 4: Seek Bench (Default)
       ActionNode((dt) {
         state = DuckState.seekBench;
-        final target = game.size / 2; // Grandma is at center
-        final steer = Steering.seek(position, target, speed);
+        final target = game.size / 2;
+        final steer = Steering.seek(position, target, GameConfig.duckSpeed);
         velocity = steer;
         return NodeStatus.success;
       }),
@@ -47,6 +139,21 @@ class DuckComponent extends PositionComponent
   @override
   void update(double dt) {
     super.update(dt);
+    if (isStunned) {
+      _stunTimer -= dt;
+      // Wobble effect: oscillate angle
+      angle = 0.1 * math.sin(_stunTimer * 20); // Fast wobble
+
+      if (_stunTimer <= 0) {
+        isStunned = false;
+        angle = 0; // Reset angle
+        state = DuckState.idle;
+      }
+      return;
+    }
+    // Ensure angle is reset if not stunned (safety)
+    if (angle != 0) angle = 0;
+
     behaviorTree.tick(dt);
     position += velocity * dt;
   }
@@ -54,20 +161,18 @@ class DuckComponent extends PositionComponent
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
-    if (other is BreadcrumbShotComponent) {
+    if (other is GrandmaComponent) {
       removeFromParent();
-    } else if (other is GrandmaComponent) {
-      // Game Over Logic
-      debugPrint('GAME OVER: Grandma hit by Duck!');
-      // For now, just remove duck or pause game
-      removeFromParent();
-      game.pauseEngine();
+      game.takeDamage(20);
     }
   }
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    canvas.drawRect(size.toRect(), Paint()..color = Colors.yellow);
+    canvas.drawRect(
+      size.toRect(),
+      Paint()..color = isStunned ? Colors.orange : Colors.yellow,
+    );
   }
 }

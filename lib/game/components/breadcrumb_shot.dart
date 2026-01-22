@@ -1,10 +1,12 @@
+import 'package:duck_attack/game/components/breadcrumb_lure.dart';
 import 'package:duck_attack/game/components/duck.dart';
+import 'package:duck_attack/game/duck_attack_game.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 class BreadcrumbShotComponent extends PositionComponent
-    with CollisionCallbacks {
+    with CollisionCallbacks, HasGameReference<DuckAttackGame> {
   BreadcrumbShotComponent({
     required this.startPosition,
     required this.targetPosition,
@@ -28,15 +30,23 @@ class BreadcrumbShotComponent extends PositionComponent
   @override
   void update(double dt) {
     super.update(dt);
-    position += velocity * dt;
-    // TODO: Check for collisions or out of bounds
+    if ((targetPosition - position).length < speed * dt) {
+      position = targetPosition;
+      // Reached target, become food/lure (Spawn Lure and remove self)
+      game.add(BreadcrumbLureComponent(position: position));
+      removeFromParent();
+    } else {
+      position += velocity * dt;
+    }
   }
 
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
     if (other is DuckComponent) {
-      removeFromParent();
+      // Stun the duck
+      other.stun();
+      // Do NOT remove shot, let it pass through
     }
   }
 

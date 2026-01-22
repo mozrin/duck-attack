@@ -1,9 +1,12 @@
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 class BreadcrumbLureComponent extends PositionComponent {
   BreadcrumbLureComponent({required Vector2 position})
-    : super(size: Vector2(20, 20), position: position, anchor: Anchor.center);
+    : super(size: Vector2(20, 20), position: position, anchor: Anchor.center) {
+    add(RectangleHitbox());
+  }
 
   @override
   void render(Canvas canvas) {
