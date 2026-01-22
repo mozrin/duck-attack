@@ -3,7 +3,7 @@ Version 1.0.0
 
 A frantic game about feeding ducks while protecting Grandma.
 
-Developed by Mozrin & Antigravity.
+Developed by Mozrin, Will, and Antigravity.
 Built with Flutter & Flame.
 
 Instructions:

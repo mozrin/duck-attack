@@ -3,9 +3,8 @@ import 'package:duck_attack/game/components/duck.dart';
 import 'package:duck_attack/game/duck_attack_game.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart';
 
-class BreadcrumbShotComponent extends PositionComponent
+class BreadcrumbShotComponent extends SpriteComponent
     with CollisionCallbacks, HasGameReference<DuckAttackGame> {
   BreadcrumbShotComponent({
     required this.startPosition,
@@ -23,10 +22,12 @@ class BreadcrumbShotComponent extends PositionComponent
 
   @override
   Future<void> onLoad() async {
+    sprite = await game.loadSprite('bread.png');
     velocity = (targetPosition - startPosition).normalized() * speed;
     add(CircleHitbox());
   }
 
+  // update and onCollision remain same, render removed
   @override
   void update(double dt) {
     super.update(dt);
@@ -47,18 +48,7 @@ class BreadcrumbShotComponent extends PositionComponent
       // Stun the duck
       other.stun();
       // Destroy the shot (it's used up by the stun)
-      // This ensures we don't accidentally feed the duck we just stunned.
       removeFromParent();
     }
-  }
-
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-    canvas.drawCircle(
-      (size / 2).toOffset(),
-      size.x / 2,
-      Paint()..color = Colors.brown,
-    );
   }
 }

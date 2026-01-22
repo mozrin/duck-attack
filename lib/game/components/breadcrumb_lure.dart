@@ -1,10 +1,12 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import 'package:duck_attack/game/config.dart';
 
-class BreadcrumbLureComponent extends PositionComponent {
+class BreadcrumbLureComponent extends SpriteComponent
+    with HasGameReference<FlameGame> {
   BreadcrumbLureComponent({required Vector2 position})
     : super(size: Vector2(20, 20), position: position, anchor: Anchor.center) {
     add(RectangleHitbox());
@@ -13,6 +15,11 @@ class BreadcrumbLureComponent extends PositionComponent {
 
   late double timeLeft;
   double get fadeDuration => GameConfig.breadFadeDuration;
+
+  @override
+  Future<void> onLoad() async {
+    sprite = await game.loadSprite('bread.png');
+  }
 
   @override
   void update(double dt) {
