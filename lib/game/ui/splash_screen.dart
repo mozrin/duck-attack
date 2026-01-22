@@ -19,7 +19,7 @@ class _SplashScreenState extends State<SplashScreen> {
       // Then wait another 3 seconds for app splash
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
-          Navigator.of(context).pushReplacementNamed('/game');
+          Navigator.of(context).pushReplacementNamed('/menu');
         }
       });
     });

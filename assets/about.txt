@@ -1,0 +1,13 @@
+Duck Attack
+Version 1.0.0
+
+A frantic game about feeding ducks while protecting Grandma.
+
+Developed by Mozrin & Antigravity.
+Built with Flutter & Flame.
+
+Instructions:
+- Drag to move Grandma to the bench.
+- Tap to throw bread crumbs.
+- Don't let the ducks peck you!
+- Feed them until they leave, or stun them to escape.
