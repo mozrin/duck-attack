@@ -1,0 +1,52 @@
+import 'package:duck_attack/game/components/duck.dart';
+import 'package:flame/collisions.dart';
+import 'package:flame/components.dart';
+import 'package:flutter/material.dart';
+
+class BreadcrumbShotComponent extends PositionComponent
+    with CollisionCallbacks {
+  BreadcrumbShotComponent({
+    required this.startPosition,
+    required this.targetPosition,
+  }) : super(
+         size: Vector2(10, 10),
+         position: startPosition,
+         anchor: Anchor.center,
+       );
+
+  final Vector2 startPosition;
+  final Vector2 targetPosition;
+  late Vector2 velocity;
+  final double speed = 300.0;
+
+  @override
+  Future<void> onLoad() async {
+    velocity = (targetPosition - startPosition).normalized() * speed;
+    add(CircleHitbox());
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    position += velocity * dt;
+    // TODO: Check for collisions or out of bounds
+  }
+
+  @override
+  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollision(intersectionPoints, other);
+    if (other is DuckComponent) {
+      removeFromParent();
+    }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    canvas.drawCircle(
+      (size / 2).toOffset(),
+      size.x / 2,
+      Paint()..color = Colors.brown,
+    );
+  }
+}
