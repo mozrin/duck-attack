@@ -27,26 +27,13 @@ class BreadcrumbLureComponent extends SpriteComponent
     timeLeft -= dt;
     if (timeLeft <= 0) {
       removeFromParent();
+      return;
     }
-  }
 
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-
-    // Calculate opacity: 1.0 normally, fades to 0.0 in last [fadeDuration] seconds
-    double opacity = 1.0;
+    // Opacity
     if (timeLeft < fadeDuration) {
-      opacity = (timeLeft / fadeDuration).clamp(0.0, 1.0);
+      final opacity = (timeLeft / fadeDuration).clamp(0.0, 1.0);
+      paint.color = Colors.white.withOpacity(opacity);
     }
-
-    // Convert to 0-255 alpha
-    final int alpha = (opacity * 255).toInt();
-
-    canvas.drawCircle(
-      (size / 2).toOffset(),
-      size.x / 2,
-      Paint()..color = Colors.orangeAccent.withAlpha(alpha),
-    );
   }
 }
