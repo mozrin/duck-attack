@@ -53,20 +53,19 @@ class DuckComponent extends PositionComponent
 
   Node _buildBehaviorTree() {
     return Selector([
-      // Priority 0: Stunned
+      // Priority 0: Stunned (High priority override)
       ConditionNode(() => isStunned),
 
-      // ... (Rest of tree is fine) ...
-      // Priority 1: Leave if Full (only after finishing eating)
+      // Priority 1: Fleeing (Once decided to flee, keep fleeing)
       Sequence([
-        ConditionNode(() => crumbsEaten >= maxCrumbs && _eatTimer <= 0),
+        ConditionNode(() => state == DuckState.flee),
         ActionNode((dt) {
-          state = DuckState.flee;
           final center = game.size / 2;
           final fleeVector = (position - center).normalized();
           velocity =
               fleeVector * GameConfig.duckSpeed * GameConfig.duckFleeMultiplier;
 
+          // Remove if off-screen
           if (!game.camera.visibleWorldRect.contains(position.toOffset())) {
             removeFromParent();
             game.addScore(50);
@@ -75,56 +74,54 @@ class DuckComponent extends PositionComponent
         }),
       ]),
 
-      // Priority 2: Eat (Busy Eating)
+      // Priority 2: Eating (Busy waiting)
       Sequence([
         ConditionNode(() => _eatTimer > 0),
         ActionNode((dt) {
           state = DuckState.eat;
           velocity = Vector2.zero();
           _eatTimer -= dt;
+
+          // Finished eating?
+          if (_eatTimer <= 0) {
+            crumbsEaten++;
+            if (crumbsEaten >= maxCrumbs) {
+              state = DuckState.flee; // Transition to flee immediately
+            } else {
+              state = DuckState
+                  .seekBench; // Go back to seeking if not full (unlikely with max=1)
+            }
+          }
           return NodeStatus.success;
         }),
       ]),
 
-      // Priority 3: Eat Food (If in path/range)
-      Sequence([
-        ActionNode((dt) {
-          final lures = game.children.whereType<BreadcrumbLureComponent>();
-          if (lures.isEmpty) return NodeStatus.failure;
+      // Priority 3: Check for Lure Collision (Strict Pathing)
+      ActionNode((dt) {
+        // Only check lures we strictly run into
+        final lures = game.children.whereType<BreadcrumbLureComponent>();
+        if (lures.isEmpty) return NodeStatus.failure;
 
-          BreadcrumbLureComponent? nearest;
-          double minDst = double.infinity;
-
-          for (final lure in lures) {
-            final dst = position.distanceTo(lure.position);
-            if (dst < minDst) {
-              minDst = dst;
-              nearest = lure;
-            }
+        for (final lure in lures) {
+          // Strict collision radius: slightly larger than sum of radii to ensure reliable pickup
+          // Duck size ~30, Lure size ~10-15.
+          // Distance < (15 + 7.5) = 22.5. Let's say 25.
+          final dist = position.distanceTo(lure.position);
+          if (dist < 25) {
+            lure.removeFromParent();
+            _eatTimer = _eatDuration;
+            state = DuckState.eat;
+            return NodeStatus.success;
           }
+        }
+        return NodeStatus.failure;
+      }),
 
-          if (nearest != null) {
-            // Check collision/eating range
-            // Only eat if we are practically on top of it (in path)
-            if (minDst < size.x / 2 + nearest.size.x / 2 + 10) {
-              nearest.removeFromParent();
-              crumbsEaten++;
-              _eatTimer = _eatDuration;
-              return NodeStatus.success;
-            }
-            // Do NOT seek. If not in range, ignore and keep moving to Grandma.
-          }
-
-          return NodeStatus.failure;
-        }),
-      ]),
-
-      // Priority 4: Seek Bench (Default)
+      // Priority 4: Default - Seek Grandma
       ActionNode((dt) {
         state = DuckState.seekBench;
         final target = game.size / 2;
-        final steer = Steering.seek(position, target, GameConfig.duckSpeed);
-        velocity = steer;
+        velocity = Steering.seek(position, target, GameConfig.duckSpeed);
         return NodeStatus.success;
       }),
     ]);

@@ -46,7 +46,9 @@ class BreadcrumbShotComponent extends PositionComponent
     if (other is DuckComponent) {
       // Stun the duck
       other.stun();
-      // Do NOT remove shot, let it pass through
+      // Destroy the shot (it's used up by the stun)
+      // This ensures we don't accidentally feed the duck we just stunned.
+      removeFromParent();
     }
   }
 
