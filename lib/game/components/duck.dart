@@ -21,7 +21,6 @@ class DuckComponent extends SpriteAnimationGroupComponent<DuckState>
 
   final Vector2 startPosition;
 
-  // Sync 'state' with the animation group's 'current'
   DuckState get state => current ?? DuckState.seekBench;
   set state(DuckState s) => current = s;
 
@@ -44,25 +43,28 @@ class DuckComponent extends SpriteAnimationGroupComponent<DuckState>
   @override
   Future<void> onLoad() async {
     // Load Animations
-    // Assuming file names are duck-walk-1.png, duck-walk-2.png, duck-walk-3.png
-    final walk1 = await game.loadSprite('duck-walk/duck-walk-1.png');
-    final walk2 = await game.loadSprite('duck-walk/duck-walk-2.png');
-    final walk3 = await game.loadSprite('duck-walk/duck-walk-3.png');
 
-    // Assuming duck-stun-1.png, duck-stun-2.png
+    // Walk: Vertical SpriteSheet (1 column, 3 rows) from duck-walk.png
+    // Image size: 2816 x 1536.
+    // 3 Frames. Texture size per frame = 2816 x (1536/3) = 2816 x 512.
+    final walkImage = await game.images.load('duck-walk.png');
+    final walkAnim = SpriteAnimation.fromFrameData(
+      walkImage,
+      SpriteAnimationData.sequenced(
+        amount: 3,
+        stepTime: 0.15,
+        textureSize: Vector2(2816, 512),
+        amountPerRow: 1, // Vertical strip
+      ),
+    );
+
+    // Stun: Keep existing folder/list logic (duck-stun folder still exists in assets?)
+    // User mentioned deleting duck-walk folder, didn't explicitly say duck-stun.
+    // Pubspec still has duck-stun.
     final stun1 = await game.loadSprite('duck-stun/duck-stun-1.png');
     final stun2 = await game.loadSprite('duck-stun/duck-stun-2.png');
 
-    const stepTime = 0.15;
-    final walkAnim = SpriteAnimation.spriteList([
-      walk1,
-      walk2,
-      walk3,
-    ], stepTime: stepTime);
-    final stunAnim = SpriteAnimation.spriteList([
-      stun1,
-      stun2,
-    ], stepTime: stepTime);
+    final stunAnim = SpriteAnimation.spriteList([stun1, stun2], stepTime: 0.15);
 
     animations = {
       DuckState.seekBench: walkAnim,
@@ -181,7 +183,6 @@ class DuckComponent extends SpriteAnimationGroupComponent<DuckState>
       return;
     }
 
-    // Using behavior tree to drive velocity and state
     behaviorTree.tick(dt);
     position += velocity * dt;
   }

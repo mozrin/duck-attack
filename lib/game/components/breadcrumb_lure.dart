@@ -33,7 +33,7 @@ class BreadcrumbLureComponent extends SpriteComponent
     // Opacity
     if (timeLeft < fadeDuration) {
       final opacity = (timeLeft / fadeDuration).clamp(0.0, 1.0);
-      paint.color = Colors.white.withOpacity(opacity);
+      paint.color = Colors.white.withValues(alpha: opacity);
     }
   }
 }
