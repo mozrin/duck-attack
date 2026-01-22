@@ -35,7 +35,10 @@ class _SplashScreenState extends State<SplashScreen> {
           // Background: Blurred version to cover screen
           ImageFiltered(
             imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Image.asset('assets/images/splash.png', fit: BoxFit.cover),
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
+            ),
           ),
           // Foreground: Sharp, contained version (Safe text)
           Center(
