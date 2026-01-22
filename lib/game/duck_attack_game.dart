@@ -15,8 +15,33 @@ class DuckAttackGame extends FlameGame
 
   final WidgetRef ref;
 
+  double _staminaTimer = 0.0;
+
   @override
-  Future<void> onLoad() async {
+  void update(double dt) {
+    super.update(dt);
+    final gameState = ref.read(gameStateProvider);
+    if (gameState.stamina < 10) {
+      _staminaTimer += dt;
+      // Regen rate: 1 stamina every 6 - (health / 20) seconds
+      // Health 100 -> 6 - 5 = 1 sec
+      // Health 0   -> 6 - 0 = 6 sec
+      final regenTime = 6.0 - (gameState.health / 20.0);
+
+      // Safety clamp
+      final effectiveRegenTime = regenTime.clamp(1.0, 6.0);
+
+      if (_staminaTimer >= effectiveRegenTime) {
+        ref.read(gameStateProvider.notifier).regenStamina();
+        _staminaTimer = 0.0;
+      }
+    } else {
+      _staminaTimer = 0.0;
+    }
+  }
+
+  @override
+  void onLoad() async {
     await super.onLoad();
     add(GrandmaComponent()..position = size / 2);
     add(WaveDirector());
@@ -24,10 +49,17 @@ class DuckAttackGame extends FlameGame
 
   @override
   void onTapUp(TapUpEvent event) {
-    // Fire breadcrumb shot
-    final origin = size / 2;
-    final target = event.localPosition;
-    add(BreadcrumbShotComponent(startPosition: origin, targetPosition: target));
+    // Check stamina
+    final notifier = ref.read(gameStateProvider.notifier);
+    if (ref.read(gameStateProvider).stamina > 0) {
+      notifier.consumeStamina();
+      // Fire breadcrumb shot
+      final origin = size / 2;
+      final target = event.localPosition;
+      add(
+        BreadcrumbShotComponent(startPosition: origin, targetPosition: target),
+      );
+    }
   }
 
   @override

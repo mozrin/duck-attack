@@ -33,24 +33,41 @@ class Hud extends ConsumerWidget {
                   ),
                 ),
 
-                // Health Bar (Center)
+                // Health & Stamina Bar (Center)
                 Expanded(
                   flex: 1,
                   child: Center(
                     child: Container(
-                      height: 12,
+                      height: 24, // Thicker for split bar
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.white, width: 2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: gameState.health / 100.0,
-                          backgroundColor: Colors.black45,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            _getHealthColor(gameState.health),
-                          ),
+                        child: Column(
+                          children: [
+                            // Health (Top Half)
+                            Expanded(
+                              child: LinearProgressIndicator(
+                                value: gameState.health / 100.0,
+                                backgroundColor: Colors.black45,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  _getHealthColor(gameState.health),
+                                ),
+                              ),
+                            ),
+                            // Stamina (Bottom Half)
+                            Expanded(
+                              child: LinearProgressIndicator(
+                                value: gameState.stamina / 10.0,
+                                backgroundColor: Colors.black45,
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.blue,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

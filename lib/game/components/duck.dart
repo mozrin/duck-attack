@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:duck_attack/game/config.dart';
 import 'package:duck_attack/game/components/breadcrumb_lure.dart';
-import 'package:duck_attack/game/components/breadcrumb_shot.dart';
 import 'package:duck_attack/game/components/grandma.dart';
 import 'package:duck_attack/game/duck_attack_game.dart';
 import 'package:duck_attack/game/systems/ai/behavior_tree.dart';

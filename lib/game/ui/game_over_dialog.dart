@@ -10,7 +10,7 @@ class GameOverDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Card(
-        color: Colors.black.withOpacity(0.8),
+        color: Colors.black.withValues(alpha: 0.8),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
