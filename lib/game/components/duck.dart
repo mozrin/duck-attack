@@ -7,11 +7,10 @@ import 'package:duck_attack/game/systems/ai/behavior_tree.dart';
 import 'package:duck_attack/game/systems/ai/steering.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart';
 
 enum DuckState { seekBench, eat, flee, idle, stunned }
 
-class DuckComponent extends PositionComponent
+class DuckComponent extends SpriteAnimationGroupComponent<DuckState>
     with HasGameReference<DuckAttackGame>, CollisionCallbacks {
   DuckComponent({required this.startPosition})
     : super(
@@ -21,7 +20,11 @@ class DuckComponent extends PositionComponent
       );
 
   final Vector2 startPosition;
-  DuckState state = DuckState.seekBench;
+
+  // Sync 'state' with the animation group's 'current'
+  DuckState get state => current ?? DuckState.seekBench;
+  set state(DuckState s) => current = s;
+
   double speed = 50.0;
   Vector2 velocity = Vector2.zero();
   late Node behaviorTree;
@@ -40,7 +43,37 @@ class DuckComponent extends PositionComponent
 
   @override
   Future<void> onLoad() async {
-    // TODO: Load duck sprite
+    // Load Animations
+    // Assuming file names are duck-walk-1.png, duck-walk-2.png, duck-walk-3.png
+    final walk1 = await game.loadSprite('duck-walk/duck-walk-1.png');
+    final walk2 = await game.loadSprite('duck-walk/duck-walk-2.png');
+    final walk3 = await game.loadSprite('duck-walk/duck-walk-3.png');
+
+    // Assuming duck-stun-1.png, duck-stun-2.png
+    final stun1 = await game.loadSprite('duck-stun/duck-stun-1.png');
+    final stun2 = await game.loadSprite('duck-stun/duck-stun-2.png');
+
+    const stepTime = 0.15;
+    final walkAnim = SpriteAnimation.spriteList([
+      walk1,
+      walk2,
+      walk3,
+    ], stepTime: stepTime);
+    final stunAnim = SpriteAnimation.spriteList([
+      stun1,
+      stun2,
+    ], stepTime: stepTime);
+
+    animations = {
+      DuckState.seekBench: walkAnim,
+      DuckState.eat: walkAnim,
+      DuckState.flee: walkAnim,
+      DuckState.idle: walkAnim,
+      DuckState.stunned: stunAnim,
+    };
+
+    current = DuckState.seekBench;
+
     behaviorTree = _buildBehaviorTree();
     add(RectangleHitbox());
   }
@@ -64,6 +97,11 @@ class DuckComponent extends PositionComponent
           final fleeVector = (position - center).normalized();
           velocity =
               fleeVector * GameConfig.duckSpeed * GameConfig.duckFleeMultiplier;
+
+          // Face direction
+          if (velocity.length > 0.1) {
+            angle = math.atan2(velocity.y, velocity.x);
+          }
 
           // Remove if off-screen
           if (!game.camera.visibleWorldRect.contains(position.toOffset())) {
@@ -103,9 +141,6 @@ class DuckComponent extends PositionComponent
         if (lures.isEmpty) return NodeStatus.failure;
 
         for (final lure in lures) {
-          // Strict collision radius: slightly larger than sum of radii to ensure reliable pickup
-          // Duck size ~30, Lure size ~10-15.
-          // Distance < (15 + 7.5) = 22.5. Let's say 25.
           final dist = position.distanceTo(lure.position);
           if (dist < 25) {
             lure.removeFromParent();
@@ -121,7 +156,14 @@ class DuckComponent extends PositionComponent
       ActionNode((dt) {
         state = DuckState.seekBench;
         final target = game.size / 2;
+
         velocity = Steering.seek(position, target, GameConfig.duckSpeed);
+
+        // Face direction
+        if (velocity.length > 0.1) {
+          angle = math.atan2(velocity.y, velocity.x);
+        }
+
         return NodeStatus.success;
       }),
     ]);
@@ -132,20 +174,14 @@ class DuckComponent extends PositionComponent
     super.update(dt);
     if (isStunned) {
       _stunTimer -= dt;
-      // Wobble effect: oscillate angle
-      angle = 0.1 * math.sin(_stunTimer * 20); // Fast wobble
-
       if (_stunTimer <= 0) {
         isStunned = false;
-        angle = 0; // Reset angle
-        // Force seek bench state immediately so it's clear we're targeting Grandma
         state = DuckState.seekBench;
       }
       return;
     }
-    // Ensure angle is reset if not stunned (safety)
-    if (angle != 0) angle = 0;
 
+    // Using behavior tree to drive velocity and state
     behaviorTree.tick(dt);
     position += velocity * dt;
   }
@@ -157,14 +193,5 @@ class DuckComponent extends PositionComponent
       removeFromParent();
       game.takeDamage(GameConfig.duckDamage);
     }
-  }
-
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-    canvas.drawRect(
-      size.toRect(),
-      Paint()..color = isStunned ? Colors.orange : Colors.yellow,
-    );
   }
 }
