@@ -9,7 +9,7 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-enum DuckState { seekBench, seekLure, eat, flee, idle, stunned }
+enum DuckState { seekBench, eat, flee, idle, stunned }
 
 class DuckComponent extends PositionComponent
     with HasGameReference<DuckAttackGame>, CollisionCallbacks {
@@ -86,7 +86,7 @@ class DuckComponent extends PositionComponent
         }),
       ]),
 
-      // Priority 3: Seek Food
+      // Priority 3: Eat Food (If in path/range)
       Sequence([
         ActionNode((dt) {
           final lures = game.children.whereType<BreadcrumbLureComponent>();
@@ -104,21 +104,15 @@ class DuckComponent extends PositionComponent
           }
 
           if (nearest != null) {
-            // Check collision/eating range (slightly generous)
-            if (minDst < size.x / 2 + nearest.size.x / 2 + 5) {
+            // Check collision/eating range
+            // Only eat if we are practically on top of it (in path)
+            if (minDst < size.x / 2 + nearest.size.x / 2 + 10) {
               nearest.removeFromParent();
               crumbsEaten++;
               _eatTimer = _eatDuration;
               return NodeStatus.success;
             }
-
-            state = DuckState.seekLure;
-            velocity = Steering.seek(
-              position,
-              nearest.position,
-              GameConfig.duckSpeed,
-            );
-            return NodeStatus.success;
+            // Do NOT seek. If not in range, ignore and keep moving to Grandma.
           }
 
           return NodeStatus.failure;

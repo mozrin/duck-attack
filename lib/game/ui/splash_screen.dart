@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
@@ -27,11 +28,20 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SizedBox(
-        width: double.infinity,
-        height: double.infinity,
-        child: Image.asset('assets/images/splash.png', fit: BoxFit.cover),
+      backgroundColor: Colors.black, // Fallback color
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background: Blurred version to cover screen
+          ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Image.asset('assets/images/splash.png', fit: BoxFit.cover),
+          ),
+          // Foreground: Sharp, contained version (Safe text)
+          Center(
+            child: Image.asset('assets/images/splash.png', fit: BoxFit.contain),
+          ),
+        ],
       ),
     );
   }
