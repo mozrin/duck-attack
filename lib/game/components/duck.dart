@@ -57,9 +57,9 @@ class DuckComponent extends PositionComponent
       ConditionNode(() => isStunned),
 
       // ... (Rest of tree is fine) ...
-      // Priority 1: Leave if Full
+      // Priority 1: Leave if Full (only after finishing eating)
       Sequence([
-        ConditionNode(() => crumbsEaten >= maxCrumbs),
+        ConditionNode(() => crumbsEaten >= maxCrumbs && _eatTimer <= 0),
         ActionNode((dt) {
           state = DuckState.flee;
           final center = game.size / 2;
@@ -104,7 +104,8 @@ class DuckComponent extends PositionComponent
           }
 
           if (nearest != null) {
-            if (minDst < size.x / 2 + nearest.size.x / 2) {
+            // Check collision/eating range (slightly generous)
+            if (minDst < size.x / 2 + nearest.size.x / 2 + 5) {
               nearest.removeFromParent();
               crumbsEaten++;
               _eatTimer = _eatDuration;
@@ -146,7 +147,8 @@ class DuckComponent extends PositionComponent
       if (_stunTimer <= 0) {
         isStunned = false;
         angle = 0; // Reset angle
-        state = DuckState.idle;
+        // Force seek bench state immediately so it's clear we're targeting Grandma
+        state = DuckState.seekBench;
       }
       return;
     }
