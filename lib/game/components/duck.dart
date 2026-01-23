@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:duck_attack/game/config.dart';
 import 'package:duck_attack/game/components/breadcrumb_lure.dart';
@@ -8,9 +9,12 @@ import 'package:duck_attack/game/systems/ai/steering.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 
+import 'package:flutter/services.dart';
+import 'package:yaml/yaml.dart';
+
 enum DuckState { seekBench, eat, flee, idle, stunned }
 
-class DuckComponent extends SpriteAnimationGroupComponent<DuckState>
+class DuckComponent extends SpriteAnimationComponent
     with HasGameReference<DuckAttackGame>, CollisionCallbacks {
   DuckComponent({required this.startPosition})
     : super(
@@ -21,8 +25,14 @@ class DuckComponent extends SpriteAnimationGroupComponent<DuckState>
 
   final Vector2 startPosition;
 
-  DuckState get state => current ?? DuckState.seekBench;
-  set state(DuckState s) => current = s;
+  DuckState _state = DuckState.seekBench;
+  DuckState get state => _state;
+  set state(DuckState s) {
+    if (_state != s) {
+      _state = s;
+      _updateAnimationState();
+    }
+  }
 
   double speed = 50.0;
   Vector2 velocity = Vector2.zero();
@@ -40,44 +50,179 @@ class DuckComponent extends SpriteAnimationGroupComponent<DuckState>
     velocity = Vector2.zero(); // Stop immediately
   }
 
+  late final Map<String, ({double start, double end})> sourceSectors = {};
+
+  // Cache for loaded animations: key = "state_direction" (e.g. "walk_N", "eat_S")
+  final Map<String, SpriteAnimation> _animationCache = {};
+  late final AssetManifest _assetManifest;
+
   @override
   Future<void> onLoad() async {
-    // Load Animations
+    // Load Asset Manifest once
+    _assetManifest = await AssetManifest.loadFromAssetBundle(rootBundle);
 
-    // Walk: Vertical SpriteSheet (1 column, 3 rows) from duck-walk.png
-    // Image size: 2816 x 1536.
-    // 3 Frames. Texture size per frame = 2816 x (1536/3) = 2816 x 512.
-    final walkImage = await game.images.load('duck-walk.png');
-    final walkAnim = SpriteAnimation.fromFrameData(
-      walkImage,
-      SpriteAnimationData.sequenced(
-        amount: 3,
-        stepTime: 0.15,
-        textureSize: Vector2(2816, 512),
-        amountPerRow: 1, // Vertical strip
-      ),
-    );
+    // Load Sector Config
+    try {
+      final yamlString = await rootBundle.loadString(
+        'assets/images/duck/walk/duck-walk-source-sectors.yaml',
+      );
+      final yamlMap = loadYaml(yamlString) as YamlMap;
+      final sectors = yamlMap['duck_source_sectors'] as YamlMap;
 
-    // Stun: Keep existing folder/list logic (duck-stun folder still exists in assets?)
-    // User mentioned deleting duck-walk folder, didn't explicitly say duck-stun.
-    // Pubspec still has duck-stun.
-    final stun1 = await game.loadSprite('duck-stun/duck-stun-1.png');
-    final stun2 = await game.loadSprite('duck-stun/duck-stun-2.png');
+      for (final key in sectors.keys) {
+        final value = sectors[key] as YamlMap;
+        sourceSectors[key as String] = (
+          start: (value['start'] as num).toDouble(),
+          end: (value['end'] as num).toDouble(),
+        );
+      }
+    } catch (e) {
+      print('Error loading duck source sectors: $e');
+    }
 
-    final stunAnim = SpriteAnimation.spriteList([stun1, stun2], stepTime: 0.15);
+    // Preload critical fallbacks or initial state to prevent jank?
+    // We'll load on demand or preload common ones.
+    // Let's preload "walk_S" (default) and "walk_N" as we know they are used.
+    await _getOrLoadAnimation(DuckState.seekBench, 'S'); // Default walk
+    await _getOrLoadAnimation(DuckState.seekBench, 'N');
 
-    animations = {
-      DuckState.seekBench: walkAnim,
-      DuckState.eat: walkAnim,
-      DuckState.flee: walkAnim,
-      DuckState.idle: walkAnim,
-      DuckState.stunned: stunAnim,
-    };
-
-    current = DuckState.seekBench;
+    // Initial animation
+    _updateAnimationState();
 
     behaviorTree = _buildBehaviorTree();
     add(RectangleHitbox());
+  }
+
+  Future<SpriteAnimation> _getOrLoadAnimation(
+    DuckState state,
+    String directionKey,
+  ) async {
+    // Normalizing state for file names
+    // seekBench -> walk
+    // eat -> eat
+    // flee -> fly
+    // stunned -> stun
+    String stateName;
+    switch (state) {
+      case DuckState.seekBench:
+      case DuckState.idle:
+        stateName = 'walk';
+        break;
+      case DuckState.eat:
+        stateName = 'eat';
+        break;
+      case DuckState.flee:
+        stateName = 'fly';
+        break;
+      case DuckState.stunned:
+        stateName = 'stun';
+        break;
+    }
+
+    final cacheKey = '${stateName}_$directionKey';
+    if (_animationCache.containsKey(cacheKey)) {
+      return _animationCache[cacheKey]!;
+    }
+
+    // 1. Try to find specific directional asset
+    // Pattern: assets/images/duck/{stateName}/{directionName}/duck-{stateName}-{directionName}-1.png
+    // e.g. assets/images/duck/walk/north/duck-walk-north-1.png
+    // Direction map: N -> north, S -> south, etc.
+    // Only North is strictly defined in file structure so far, but let's be generic
+    String dirName = directionKey.toLowerCase();
+
+    // Check availability
+    // We expect 6 frames? Or should we check how many match?
+    // Let's look for at least frame 1.
+    final basePath =
+        'assets/images/duck/$stateName/$dirName/duck-$stateName-$dirName-';
+    final frame1Path = '${basePath}1.png';
+
+    List<String> validPaths = [];
+    if (_assetManifest.listAssets().contains(frame1Path)) {
+      // Found! Collect frames 1..6 (or more?)
+      int frame = 1;
+      while (true) {
+        final p = '$basePath$frame.png';
+        if (_assetManifest.listAssets().contains(p)) {
+          validPaths.add(p);
+          frame++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    SpriteAnimation anim;
+
+    if (validPaths.isNotEmpty) {
+      // Load sprites
+      final sprites = await Future.wait(
+        validPaths.map(
+          (p) => game.loadSprite(p.replaceFirst('assets/images/', '')),
+        ),
+      );
+      anim = SpriteAnimation.spriteList(sprites, stepTime: 0.15);
+    } else {
+      // 2. Fallbacks
+
+      if (stateName == 'stun') {
+        // Stun: Shaking Orange Square
+        final s1 = await _generateFallbackSprite(
+          30,
+          const ui.Color(0xFFFFA500),
+          0,
+        );
+        final s2 = await _generateFallbackSprite(
+          30,
+          const ui.Color(0xFFFFA500),
+          2,
+        );
+        anim = SpriteAnimation.spriteList([s1, s2], stepTime: 0.1);
+      } else {
+        // Procedural single frame
+        ui.Color c = const ui.Color(0xFFFFFFFF); // Default white (walk)
+        int size = 30;
+
+        if (stateName == 'fly') {
+          size = 15;
+        } else if (stateName == 'eat') {
+          c = const ui.Color(0xFF00FF00); // Green
+        }
+
+        final s = await _generateFallbackSprite(size, c, 0);
+        anim = SpriteAnimation.spriteList([s], stepTime: 1.0);
+      }
+    }
+
+    _animationCache[cacheKey] = anim;
+    return anim;
+  }
+
+  Future<Sprite> _generateFallbackSprite(
+    int size,
+    ui.Color color,
+    double offset,
+  ) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+    final paint = ui.Paint()..color = color;
+    // Draw centered with offset
+    canvas.drawRect(
+      Rect.fromLTWH(offset, offset, size.toDouble(), size.toDouble()),
+      paint,
+    );
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(
+      size + (offset.toInt() * 2),
+      size + (offset.toInt() * 2),
+    );
+    return Sprite(image);
+  }
+
+  void _updateAnimationState() {
+    // Re-trigger directional update to catch the new state
+    _updateDirectionalAnimation();
   }
 
   // Eating/Fullness Logic
@@ -99,11 +244,6 @@ class DuckComponent extends SpriteAnimationGroupComponent<DuckState>
           final fleeVector = (position - center).normalized();
           velocity =
               fleeVector * GameConfig.duckSpeed * GameConfig.duckFleeMultiplier;
-
-          // Face direction
-          if (velocity.length > 0.1) {
-            angle = math.atan2(velocity.y, velocity.x);
-          }
 
           // Remove if off-screen
           if (!game.camera.visibleWorldRect.contains(position.toOffset())) {
@@ -161,11 +301,6 @@ class DuckComponent extends SpriteAnimationGroupComponent<DuckState>
 
         velocity = Steering.seek(position, target, GameConfig.duckSpeed);
 
-        // Face direction
-        if (velocity.length > 0.1) {
-          angle = math.atan2(velocity.y, velocity.x);
-        }
-
         return NodeStatus.success;
       }),
     ]);
@@ -185,6 +320,52 @@ class DuckComponent extends SpriteAnimationGroupComponent<DuckState>
 
     behaviorTree.tick(dt);
     position += velocity * dt;
+
+    // Update animation based on direction if moving and not stunned
+    if (state != DuckState.stunned && velocity.length > 0.1) {
+      _updateDirectionalAnimation();
+    }
+  }
+
+  void _updateDirectionalAnimation() {
+    final double rad = math.atan2(velocity.y, velocity.x);
+    double deg = rad * 180 / math.pi;
+    double sourceDeg = (deg + 270) % 360;
+    if (sourceDeg < 0) sourceDeg += 360;
+
+    String directionKey = 's'; // Default
+    for (final entry in sourceSectors.entries) {
+      final range = entry.value;
+      bool match;
+      if (range.start <= range.end) {
+        match = sourceDeg >= range.start && sourceDeg < range.end;
+      } else {
+        match = sourceDeg >= range.start || sourceDeg < range.end;
+      }
+      if (match) {
+        directionKey = entry.key;
+        break;
+      }
+    }
+
+    // Default to 'S' if we don't have a better idea, or if velocity is 0
+    if (velocity.length < 0.1) {
+      // If idle, maybe keep last direction?
+      // For now let's just use S or wait for state change
+      // But _updateDirectionalAnimation is called in update loop if velocity > 0.1
+      // If called manually from state change, we might have 0 velocity.
+    }
+
+    // Load/Get animation
+    // Ideally we don't await in update loop.
+    // We should fire the load and update when ready, or rely on cache.
+    // Since we can't await in update, we check cache; if missing, trigger load and set later.
+    final animFuture = _getOrLoadAnimation(state, directionKey);
+    animFuture.then((anim) {
+      if (animation != anim) {
+        animation = anim;
+      }
+    });
   }
 
   @override

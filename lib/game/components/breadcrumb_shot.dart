@@ -22,7 +22,7 @@ class BreadcrumbShotComponent extends SpriteComponent
 
   @override
   Future<void> onLoad() async {
-    sprite = await game.loadSprite('bread.png');
+    sprite = await game.loadSprite('bread/fallback_bread.png');
     velocity = (targetPosition - startPosition).normalized() * speed;
     add(CircleHitbox());
   }

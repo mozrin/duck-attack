@@ -10,6 +10,6 @@ class GrandmaComponent extends SpriteComponent
 
   @override
   Future<void> onLoad() async {
-    sprite = await game.loadSprite('grandma.png');
+    sprite = await game.loadSprite('grandma/fallback_grandma.png');
   }
 }

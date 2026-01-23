@@ -1,0 +1,24 @@
+# Duck source sectors (degrees)
+# 0.0° = North (top of screen), angles increase clockwise
+# Each slice = 22.5° wide, boundaries rounded to tenths
+# end_exclusive: true → 'end' is not included
+
+end_exclusive: true
+
+duck_source_sectors:
+  n: { start: 168.8, end: 191.3 } # opposite of 0.0°
+  nne: { start: 191.3, end: 213.8 } # opposite of 22.5°
+  ne: { start: 213.8, end: 236.3 } # opposite of 45.0°
+  ene: { start: 236.3, end: 258.8 } # opposite of 67.5°
+  e: { start: 258.8, end: 281.3 } # opposite of 90.0°
+  ese: { start: 281.3, end: 303.8 } # opposite of 112.5°
+  se: { start: 303.8, end: 326.3 } # opposite of 135.0°
+  sse: { start: 326.3, end: 348.8 } # opposite of 157.5°
+  s: { start: 348.8, end: 371.3 } # opposite of 180.0° (wraps past 360)
+  ssw: { start: 11.3, end: 33.8 } # opposite of 202.5°
+  sw: { start: 33.8, end: 56.3 } # opposite of 225.0°
+  wsw: { start: 56.3, end: 78.8 } # opposite of 247.5°
+  w: { start: 78.8, end: 101.3 } # opposite of 270.0°
+  wnw: { start: 101.3, end: 123.8 } # opposite of 292.5°
+  nw: { start: 123.8, end: 146.3 } # opposite of 315.0°
+  nnw: { start: 146.3, end: 168.8 } # opposite of 337.5°

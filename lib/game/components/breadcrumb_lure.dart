@@ -18,7 +18,7 @@ class BreadcrumbLureComponent extends SpriteComponent
 
   @override
   Future<void> onLoad() async {
-    sprite = await game.loadSprite('bread.png');
+    sprite = await game.loadSprite('bread/fallback_bread.png');
   }
 
   @override
