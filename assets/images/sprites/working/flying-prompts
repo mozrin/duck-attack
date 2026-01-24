@@ -1,0 +1,35 @@
+
+I need to generate a sprite sheet made up of a duck in flight towards the SOUTH (down)
+
+High quality, high resolution
+
+The wing movement should be logical and realistic to simulate flight.
+
+Perspective: Top-down 2D Game View. The user is looking down at the phone screen.
+
+- SOUTH means flying from the TOP of the screen to the BOTTOM of the screen.
+- The camera sees the TOP of the duck (Head, Back, Wings).
+- We should NOT see the duck's chest or belly (unless angled).
+- Motion is strictly vertical (Y-axis) on the screen.
+
+Animation Cycle (3 frames):
+
+1. Wings High.
+2. Wings Level.
+3. Wings Low.
+
+Other Constraints:
+
+1. No shadow under the duck.
+2. Background is transparent.
+3. Style: Identical duck to provided example pictures, except IN FLIGHT
+    a. ONLY 3 frames.
+    b. Duck is in flight.
+
+Anatomy Constraints:
+
+1. Duck only has two wings
+2. Ducks only have two feet.
+3. Feet are tucked under the tail.
+
+Save this created image in the assets/images/sprites/duck/fly folder

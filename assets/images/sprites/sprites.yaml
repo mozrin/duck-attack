@@ -11,30 +11,204 @@ sectors:
 images:
   duck:
     walk:
+      n: # North
+        source: duck/walk/duck-walk-sheet-north.png
+        frames:
+          01:
+            left: 33
+            top: 9
+            width: 69
+            height: 99
+            center: [68, 60]
+            rotate: 0
+          02:
+            left: 178
+            top: 9
+            width: 69
+            height: 99
+            center: [218, 60]
+            rotate: 0
+          03:
+            left: 331
+            top: 9
+            width: 69
+            height: 99
+            center: [368, 60]
+            rotate: 0
+          04:
+            left: 482
+            top: 9
+            width: 69
+            height: 99
+            center: [516, 60]
+            rotate: 0
+          05:
+            left: 625
+            top: 9
+            width: 69
+            height: 99
+            center: [664, 60]
+            rotate: 0
+          06:
+            left: 780
+            top: 9
+            width: 69
+            height: 99
+            center: [815, 60]
+            rotate: 0
       s: # South
         source: duck/walk/duck-walk-sheet-south.png
         frames:
-          1: [34, 11, 68, 97]
-          2: [184, 11, 68, 97]
-          3: [328, 11, 68, 97]
-          4: [477, 11, 68, 97]
-          5: [632, 11, 68, 97]
-          6: [782, 11, 68, 97]
+          01:
+            left: 34
+            top: 11
+            width: 68
+            height: 97
+            center: [67, 32]
+            rotate: 0
+          02:
+            left: 184
+            top: 11
+            width: 68
+            height: 97
+            center: [217, 32]
+            rotate: 0
+          03:
+            left: 328
+            top: 11
+            width: 68
+            height: 97
+            center: [367, 32]
+            rotate: 0
+          04:
+            left: 477
+            top: 11
+            width: 68
+            height: 97
+            center: [516, 32]
+            rotate: 0
+          05:
+            left: 632
+            top: 11
+            width: 68
+            height: 97
+            center: [664, 32]
+            rotate: 0
+          06:
+            left: 782
+            top: 11
+            width: 68
+            height: 97
+            center: [815, 32]
+            rotate: 0
       e: # East
         source: duck/walk/duck-walk-sheet-east.png
         frames:
-          1: [28, 12, 79, 97]
-          2: [179, 12, 79, 97]
-          3: [328, 12, 79, 97]
-          4: [478, 12, 79, 97]
-          5: [627, 12, 79, 97]
-          6: [777, 12, 79, 97]
+          01:
+            left: 28
+            top: 12
+            width: 79
+            height: 97
+            center: [68, 60]
+            rotate: 0
+          02:
+            left: 179
+            top: 12
+            width: 79
+            height: 97
+            center: [218, 60]
+            rotate: 0
+          03:
+            left: 328
+            top: 12
+            width: 79
+            height: 97
+            center: [368, 60]
+            rotate: 0
+          04:
+            left: 478
+            top: 12
+            width: 79
+            height: 97
+            center: [516, 60]
+            rotate: 0
+          05:
+            left: 627
+            top: 12
+            width: 79
+            height: 97
+            center: [664, 60]
+            rotate: 0
+          06:
+            left: 777
+            top: 12
+            width: 79
+            height: 97
+            center: [815, 60]
+            rotate: 0
       w: # West
         source: duck/walk/duck-walk-sheet-west.png
         frames:
-          1: [28, 10, 78, 97]
-          2: [179, 10, 78, 97]
+          01:
+            left: 28
+            top: 10
+            width: 78
+            height: 97
+            center: [68, 60]
+            rotate: 0
+          02:
+            left: 179
+            top: 10
+            width: 78
+            height: 97
+            center: [218, 60]
+            rotate: 0
           3: [328, 10, 78, 97]
           4: [478, 10, 78, 97]
           5: [627, 10, 78, 97]
           6: [777, 10, 78, 97]
+      se: # South-East
+        source: duck/walk/duck-walk-sheet-south-east.png
+        frames:
+          01:
+            left: 29
+            top: 12
+            width: 74
+            height: 95
+            center: [68, 60]
+            rotate: 0
+          02:
+            left: 179
+            top: 12
+            width: 74
+            height: 95
+            center: [218, 60]
+            rotate: 0
+          03:
+            left: 328
+            top: 12
+            width: 74
+            height: 95
+            center: [368, 60]
+            rotate: 0
+          04:
+            left: 479
+            top: 12
+            width: 74
+            height: 95
+            center: [516, 60]
+            rotate: 0
+          05:
+            left: 627
+            top: 12
+            width: 74
+            height: 95
+            center: [664, 60]
+            rotate: 0
+          06:
+            left: 778
+            top: 12
+            width: 74
+            height: 95
+            center: [815, 60]
+            rotate: 0

@@ -54,6 +54,12 @@ class DuckComponent extends SpriteAnimationComponent
 
   // Cache for loaded animations: key = "state_direction" (e.g. "walk_N", "eat_S")
   final Map<String, SpriteAnimation> _animationCache = {};
+
+  // Cache for metadata (anchors/rotation) corresponding to animations
+  final Map<String, List<DuckMetadata>> _metadataCache = {};
+
+  String? _currentAnimationKey;
+
   late final AssetManifest _assetManifest;
 
   @override
@@ -104,11 +110,7 @@ class DuckComponent extends SpriteAnimationComponent
   // Config loaded from yaml
   YamlMap? _spriteConfig;
 
-  Future<SpriteAnimation> _getOrLoadAnimation(
-    DuckState state,
-    String directionKey,
-  ) async {
-    // Normalizing state for file names
+  String _getCacheKey(DuckState state, String directionKey) {
     String stateName;
     switch (state) {
       case DuckState.seekBench:
@@ -125,14 +127,25 @@ class DuckComponent extends SpriteAnimationComponent
         stateName = 'stun';
         break;
     }
+    return '${stateName}_$directionKey';
+  }
 
-    final cacheKey = '${stateName}_$directionKey';
+  Future<SpriteAnimation> _getOrLoadAnimation(
+    DuckState state,
+    String directionKey,
+  ) async {
+    final cacheKey = _getCacheKey(state, directionKey);
     if (_animationCache.containsKey(cacheKey)) {
       return _animationCache[cacheKey]!;
     }
 
-    SpriteAnimation anim;
-    String dirName = directionKey.toLowerCase();
+    // Normalizing state for file names (needed for file lookup, also in cache key logic)
+    // We can re-derive stateName from key or just parse again.
+    // Let's just grab stateName from key parts? limit: '_'
+    final parts = cacheKey.split('_');
+    final stateName = parts[0];
+    // Direction key might be 's' etc.
+    final dirName = directionKey.toLowerCase();
 
     // 1. Check YAML config for explicit definition
     // New structure: duck -> stateName -> dirName (e.g. duck -> walk -> s)
@@ -170,28 +183,67 @@ class DuckComponent extends SpriteAnimationComponent
       }
     }
 
+    SpriteAnimation anim; // Fixed: Declaration added
+
     if (configEntry != null && configEntry is YamlMap) {
       try {
         final sourcePath = 'assets/images/sprites/${configEntry['source']}';
         final sheetImage = await game.images.load(
           sourcePath.replaceFirst('assets/images/', ''),
-        ); // flame loads from assets/images by default? No, game.images.load assumes assets/images prefix usually.
-        // Actually flame's game.images.load looks in assets/images by default.
-        // sourcePath defined in yaml: duck/walk/duck-walk-sheet-south.png
-        // so we want assets/images/sprites/duck/walk/...
-        // we pass 'sprites/${configEntry['source']}'
+        );
 
         final framesMap = configEntry['frames'] as YamlMap;
         final sprites = <Sprite>[];
+        final metadataList = <DuckMetadata>[];
 
         // Iterate 1..N
-        int i = 1;
-        while (framesMap.containsKey(i)) {
-          final rectList = framesMap[i] as YamlList;
-          final x = (rectList[0] as num).toDouble();
-          final y = (rectList[1] as num).toDouble();
-          final w = (rectList[2] as num).toDouble();
-          final h = (rectList[3] as num).toDouble();
+        // Sort keys to ensure order 1, 2, 3...
+        final sortedKeys =
+            framesMap.keys.map((e) => int.parse(e.toString())).toList()..sort();
+
+        for (final k in sortedKeys) {
+          final raw = framesMap[k]; // Can be List or Map (YamlList or YamlMap)
+
+          double x, y, w, h;
+          Offset? center;
+          double rotation = 0;
+
+          if (raw is YamlList || raw is List) {
+            final list = (raw as List);
+            x = (list[0] as num).toDouble();
+            y = (list[1] as num).toDouble();
+            w = (list[2] as num).toDouble();
+            h = (list[3] as num).toDouble();
+          } else if (raw is YamlMap || raw is Map) {
+            final map = (raw as Map);
+            x = (map['left'] as num).toDouble();
+            y = (map['top'] as num).toDouble();
+            // Support both width/height and legacy right/bottom for robustness during migration
+            if (map.containsKey('width')) {
+              w = (map['width'] as num).toDouble();
+            } else {
+              w = (map['right'] as num).toDouble();
+            }
+
+            if (map.containsKey('height')) {
+              h = (map['height'] as num).toDouble();
+            } else {
+              h = (map['bottom'] as num).toDouble();
+            }
+
+            if (map.containsKey('center')) {
+              final cList = map['center'] as List;
+              center = Offset(
+                (cList[0] as num).toDouble(),
+                (cList[1] as num).toDouble(),
+              );
+            }
+            if (map.containsKey('rotate')) {
+              rotation = (map['rotate'] as num).toDouble() * (math.pi / 180.0);
+            }
+          } else {
+            continue;
+          }
 
           sprites.add(
             Sprite(
@@ -200,12 +252,13 @@ class DuckComponent extends SpriteAnimationComponent
               srcSize: Vector2(w, h),
             ),
           );
-          i++;
+          metadataList.add(DuckMetadata(center: center, rotation: rotation));
         }
 
         if (sprites.isNotEmpty) {
           anim = SpriteAnimation.spriteList(sprites, stepTime: 0.15);
           _animationCache[cacheKey] = anim;
+          _metadataCache[cacheKey] = metadataList;
           return anim;
         }
       } catch (e) {
@@ -441,13 +494,27 @@ class DuckComponent extends SpriteAnimationComponent
     }
 
     // Load/Get animation
-    // Ideally we don't await in update loop.
-    // We should fire the load and update when ready, or rely on cache.
     // Since we can't await in update, we check cache; if missing, trigger load and set later.
     final animFuture = _getOrLoadAnimation(state, directionKey);
     animFuture.then((anim) {
       if (animation != anim) {
         animation = anim;
+        // Key reconstruction (slightly redundant but safe)
+        // We know 'state' and 'directionKey' used to call getOrLoad
+        // Use generic helper or just reconstruct key here?
+        // _getOrLoadAnimation constructs key internally.
+        // It's cleaner to return the key OR update the key inside _getOrLoadAnimation?
+        // But _getOrLoadAnimation returns Future<SpriteAnimation>.
+        // Let's reconstruct key here.
+        // Normalizing state name logic is duplicated.
+        // Refactor normalization? For now just duplicate the small switch or make getOrLoad return a record?
+        // Changing getOrLoad signature is invasive.
+        // I'll assume standard naming unless overridden.
+        // Actually, _getOrLoadAnimation logic is complex.
+        // Better: Make _getOrLoadAnimation update a local variable if it successfully loads/returns?
+        // No, multiple concurrent loads might race.
+        // Better: Create a helper `_getKey(state, dir)` to unify logic.
+        _currentAnimationKey = _getCacheKey(state, directionKey);
       }
     });
 
@@ -468,6 +535,66 @@ class DuckComponent extends SpriteAnimationComponent
   }
 
   @override
+  void render(ui.Canvas canvas) {
+    // Standard render if no metadata
+    if (animation == null ||
+        _currentAnimationKey == null ||
+        !_metadataCache.containsKey(_currentAnimationKey)) {
+      super.render(canvas);
+      return;
+    }
+
+    final metadataList = _metadataCache[_currentAnimationKey]!;
+
+    // Check ticker
+    if (animationTicker == null) {
+      super.render(canvas);
+      return;
+    }
+
+    final int index = animationTicker!.currentIndex;
+    if (index >= metadataList.length) {
+      super.render(canvas);
+      return;
+    }
+
+    final data = metadataList[index];
+    final sprite = animationTicker!.getSprite();
+
+    // 1. Calculate relative anchor in SOURCE pixels
+    Offset relativeAnchorSrc = Offset(
+      sprite.srcSize.x / 2,
+      sprite.srcSize.y / 2,
+    ); // Default center
+    if (data.center != null) {
+      relativeAnchorSrc = data.center! - sprite.srcPosition.toOffset();
+    }
+
+    // 3. Scale to DESTINATION pixels (width fixed at 30)
+    final double scale = size.x / sprite.srcSize.x;
+
+    canvas.save();
+
+    // Move to Component Center (which is our pivot)
+    final pivotingPoint = size.toSize().center(Offset.zero);
+    canvas.translate(pivotingPoint.dx, pivotingPoint.dy);
+
+    // Apply Rotation
+    canvas.rotate(data.rotation);
+
+    // Apply Anchor Offset: Shift image so its anchor matches the pivot
+    canvas.translate(
+      -relativeAnchorSrc.dx * scale,
+      -relativeAnchorSrc.dy * scale,
+    );
+
+    // Draw
+    sprite.render(canvas, size: size);
+
+    canvas.restore();
+  }
+
+  @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
     if (other is GrandmaComponent) {
@@ -475,4 +602,10 @@ class DuckComponent extends SpriteAnimationComponent
       game.takeDamage(GameConfig.duckDamage);
     }
   }
+}
+
+class DuckMetadata {
+  final ui.Offset? center;
+  final double rotation;
+  DuckMetadata({this.center, this.rotation = 0});
 }
