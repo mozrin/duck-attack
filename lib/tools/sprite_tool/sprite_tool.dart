@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 import 'package:flame/extensions.dart';
 import 'package:flame/flame.dart';
 import 'package:flame/sprite.dart';
-import 'package:flame/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -444,12 +443,6 @@ class SheetPainter extends CustomPainter {
       final frames = config!['frames'] as Map;
       final keys = frames.keys.map((e) => int.parse(e.toString())).toList()
         ..sort();
-
-      final paintStroke = Paint()
-        ..color = Colors.grey
-            .withValues(alpha: 0.5) // Faint outline for inactive
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0 / scale;
 
       final paintHighlight = Paint()
         ..color = Colors

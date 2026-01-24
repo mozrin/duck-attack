@@ -135,24 +135,37 @@ class DuckComponent extends SpriteAnimationComponent
     String dirName = directionKey.toLowerCase();
 
     // 1. Check YAML config for explicit definition
-    // Try keys: "state_dir" (e.g. walk_s) or generic "state" (e.g. walk) if it applies
+    // New structure: duck -> stateName -> dirName (e.g. duck -> walk -> s)
     dynamic configEntry;
     if (_spriteConfig != null) {
-      if (_spriteConfig!.containsKey('${stateName}_$dirName')) {
-        configEntry = _spriteConfig!['${stateName}_$dirName'];
-      } else if (_spriteConfig!.containsKey(stateName)) {
-        // Fallback to generic state name IF it makes sense (e.g. user mapped 'walk' -> 's')
-        // For now, if we are looking for 's' and find 'walk', we use it.
-        // If we looking for 'n' and find 'walk', we might NOT want to use it if 'walk' is hardcoded to south.
-        // But per user request "consolidated things", let's check if the source filename hints at direction.
-        final genericEntry = _spriteConfig![stateName] as YamlMap;
-        final source = genericEntry['source'] as String?;
-        if (dirName == 's' && source != null && source.contains('south')) {
-          configEntry = genericEntry;
+      // Try nested lookup for 'duck' -> stateName -> dirName
+      if (_spriteConfig!.containsKey('duck')) {
+        final duckConfig = _spriteConfig!['duck'];
+        if (duckConfig is Map && duckConfig.containsKey(stateName)) {
+          final stateConfig = duckConfig[stateName];
+          if (stateConfig is Map && stateConfig.containsKey(dirName)) {
+            configEntry = stateConfig[dirName];
+          }
         }
-        // If we want to support the user's current simplified yaml where 'walk' key exists:
-        if (dirName == 's' && stateName == 'walk') {
-          configEntry = genericEntry;
+      }
+
+      // Legacy/Fallback (flat keys)
+      if (configEntry == null) {
+        if (_spriteConfig!.containsKey('${stateName}_$dirName')) {
+          configEntry = _spriteConfig!['${stateName}_$dirName'];
+        } else if (_spriteConfig!.containsKey(stateName)) {
+          // Fallback to generic state name IF it makes sense (e.g. user mapped 'walk' -> 's')
+          final genericEntry = _spriteConfig![stateName] as YamlMap;
+          if (genericEntry.containsKey('source')) {
+            // Only use if legacy format
+            final source = genericEntry['source'] as String?;
+            if (dirName == 's' && source != null && source.contains('south')) {
+              configEntry = genericEntry;
+            }
+            if (dirName == 's' && stateName == 'walk') {
+              configEntry = genericEntry;
+            }
+          }
         }
       }
     }
@@ -437,6 +450,21 @@ class DuckComponent extends SpriteAnimationComponent
         animation = anim;
       }
     });
+
+    // Dynamic Sizing: Maintain aspect ratio based on fixed width 30
+    if (animation != null && animationTicker != null) {
+      final currentSprite = animationTicker!.getSprite();
+      final srcW = currentSprite.srcSize.x;
+      final srcH = currentSprite.srcSize.y;
+
+      if (srcW > 0) {
+        final ratio = srcH / srcW;
+        final newHeight = 30.0 * ratio;
+        // Only update if significantly different to avoid sub-pixel jitter?
+        // Just set it, Vector2 equality check might optimize internally or valid to set every frame.
+        size = Vector2(30.0, newHeight);
+      }
+    }
   }
 
   @override
