@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 import 'package:duck_attack/game/config.dart';
 import 'package:duck_attack/game/components/breadcrumb_lure.dart';
@@ -91,7 +92,7 @@ class DuckComponent extends SpriteAnimationComponent
         _spriteConfig = yamlMap['images'] as YamlMap;
       }
     } catch (e) {
-      print('Error loading sprites.yaml: $e');
+      debugPrint('Error loading sprites.yaml: $e');
     }
 
     // Preload critical fallbacks or initial state to prevent jank?
@@ -262,7 +263,7 @@ class DuckComponent extends SpriteAnimationComponent
           return anim;
         }
       } catch (e) {
-        print('Error loading sprite from config [$cacheKey]: $e');
+        debugPrint('Error loading sprite from config [$cacheKey]: $e');
       }
     }
 

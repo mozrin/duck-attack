@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:yaml/yaml.dart';
 
@@ -93,6 +94,6 @@ class GameConfig {
     _defaults['bread.fade'] = breadFadeDuration;
 
     _isModifiedInternal = false;
-    print('GameConfig Loaded: Speed=$duckSpeed, Flee=$duckFleeMultiplier');
+    debugPrint('GameConfig Loaded: Speed=$duckSpeed, Flee=$duckFleeMultiplier');
   }
 }

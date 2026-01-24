@@ -408,16 +408,18 @@ class _SpriteToolAppState extends State<SpriteToolApp>
           _numInput("Left", frameData['left'], (v) => frameData['left'] = v),
           _numInput("Top", frameData['top'], (v) => frameData['top'] = v),
           _numInput("Width", frameData['width'] ?? frameData['right'], (v) {
-            if (frameData.containsKey('width'))
+            if (frameData.containsKey('width')) {
               frameData['width'] = v;
-            else
+            } else {
               frameData['right'] = v;
+            }
           }),
           _numInput("Height", frameData['height'] ?? frameData['bottom'], (v) {
-            if (frameData.containsKey('height'))
+            if (frameData.containsKey('height')) {
               frameData['height'] = v;
-            else
+            } else {
               frameData['bottom'] = v;
+            }
           }),
           const Divider(),
           const Text(
@@ -635,10 +637,11 @@ class _SpriteToolAppState extends State<SpriteToolApp>
                                         : Icons.play_arrow,
                                   ),
                                   onPressed: () => setState(() {
-                                    if (_ticker.isTicking)
+                                    if (_ticker.isTicking) {
                                       _ticker.stop();
-                                    else
+                                    } else {
                                       _ticker.start();
+                                    }
                                   }),
                                 ),
                                 IconButton(
