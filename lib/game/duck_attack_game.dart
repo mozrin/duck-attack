@@ -74,13 +74,19 @@ class DuckAttackGame extends FlameGame
   }
 
   void addScore(int points) {
-    ref.read(gameStateProvider.notifier).addScore(points);
+    Future.microtask(() {
+      ref.read(gameStateProvider.notifier).addScore(points);
+    });
   }
 
   void takeDamage(int damage) {
-    ref.read(gameStateProvider.notifier).takeDamage(damage);
-    if (ref.read(gameStateProvider).health <= 0) {
-      gameOver();
+    Future.microtask(() {
+      ref.read(gameStateProvider.notifier).takeDamage(damage);
+    });
+    // Check game over logic could be done inside notifier too, but deferring here for now
+    if (ref.read(gameStateProvider).health - damage <= 0) {
+      // Defer this too as it likely manipulates overlays which interacts with UI
+      Future.microtask(() => gameOver());
     }
   }
 

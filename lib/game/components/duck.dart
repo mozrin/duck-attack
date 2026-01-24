@@ -61,23 +61,31 @@ class DuckComponent extends SpriteAnimationComponent
     // Load Asset Manifest once
     _assetManifest = await AssetManifest.loadFromAssetBundle(rootBundle);
 
-    // Load Sector Config
+    // Load Sector & Sprite Config
     try {
       final yamlString = await rootBundle.loadString(
-        'assets/images/duck/walk/duck-walk-source-sectors.yaml',
+        'assets/images/sprites/sprites.yaml',
       );
       final yamlMap = loadYaml(yamlString) as YamlMap;
-      final sectors = yamlMap['duck_source_sectors'] as YamlMap;
 
-      for (final key in sectors.keys) {
-        final value = sectors[key] as YamlMap;
-        sourceSectors[key as String] = (
-          start: (value['start'] as num).toDouble(),
-          end: (value['end'] as num).toDouble(),
-        );
+      // Load Sectors
+      if (yamlMap.containsKey('sectors')) {
+        final sectors = yamlMap['sectors'] as YamlMap;
+        for (final key in sectors.keys) {
+          final value = sectors[key] as YamlList;
+          sourceSectors[key as String] = (
+            start: (value[0] as num).toDouble(),
+            end: (value[1] as num).toDouble(),
+          );
+        }
+      }
+
+      // Load Sprite Configs
+      if (yamlMap.containsKey('images')) {
+        _spriteConfig = yamlMap['images'] as YamlMap;
       }
     } catch (e) {
-      print('Error loading duck source sectors: $e');
+      print('Error loading sprites.yaml: $e');
     }
 
     // Preload critical fallbacks or initial state to prevent jank?
@@ -93,15 +101,14 @@ class DuckComponent extends SpriteAnimationComponent
     add(RectangleHitbox());
   }
 
+  // Config loaded from yaml
+  YamlMap? _spriteConfig;
+
   Future<SpriteAnimation> _getOrLoadAnimation(
     DuckState state,
     String directionKey,
   ) async {
     // Normalizing state for file names
-    // seekBench -> walk
-    // eat -> eat
-    // flee -> fly
-    // stunned -> stun
     String stateName;
     switch (state) {
       case DuckState.seekBench:
@@ -124,23 +131,90 @@ class DuckComponent extends SpriteAnimationComponent
       return _animationCache[cacheKey]!;
     }
 
-    // 1. Try to find specific directional asset
-    // Pattern: assets/images/duck/{stateName}/{directionName}/duck-{stateName}-{directionName}-1.png
-    // e.g. assets/images/duck/walk/north/duck-walk-north-1.png
-    // Direction map: N -> north, S -> south, etc.
-    // Only North is strictly defined in file structure so far, but let's be generic
+    SpriteAnimation anim;
     String dirName = directionKey.toLowerCase();
 
-    // Check availability
-    // We expect 6 frames? Or should we check how many match?
-    // Let's look for at least frame 1.
-    final basePath =
-        'assets/images/duck/$stateName/$dirName/duck-$stateName-$dirName-';
+    // 1. Check YAML config for explicit definition
+    // Try keys: "state_dir" (e.g. walk_s) or generic "state" (e.g. walk) if it applies
+    dynamic configEntry;
+    if (_spriteConfig != null) {
+      if (_spriteConfig!.containsKey('${stateName}_$dirName')) {
+        configEntry = _spriteConfig!['${stateName}_$dirName'];
+      } else if (_spriteConfig!.containsKey(stateName)) {
+        // Fallback to generic state name IF it makes sense (e.g. user mapped 'walk' -> 's')
+        // For now, if we are looking for 's' and find 'walk', we use it.
+        // If we looking for 'n' and find 'walk', we might NOT want to use it if 'walk' is hardcoded to south.
+        // But per user request "consolidated things", let's check if the source filename hints at direction.
+        final genericEntry = _spriteConfig![stateName] as YamlMap;
+        final source = genericEntry['source'] as String?;
+        if (dirName == 's' && source != null && source.contains('south')) {
+          configEntry = genericEntry;
+        }
+        // If we want to support the user's current simplified yaml where 'walk' key exists:
+        if (dirName == 's' && stateName == 'walk') {
+          configEntry = genericEntry;
+        }
+      }
+    }
+
+    if (configEntry != null && configEntry is YamlMap) {
+      try {
+        final sourcePath = 'assets/images/sprites/${configEntry['source']}';
+        final sheetImage = await game.images.load(
+          sourcePath.replaceFirst('assets/images/', ''),
+        ); // flame loads from assets/images by default? No, game.images.load assumes assets/images prefix usually.
+        // Actually flame's game.images.load looks in assets/images by default.
+        // sourcePath defined in yaml: duck/walk/duck-walk-sheet-south.png
+        // so we want assets/images/sprites/duck/walk/...
+        // we pass 'sprites/${configEntry['source']}'
+
+        final framesMap = configEntry['frames'] as YamlMap;
+        final sprites = <Sprite>[];
+
+        // Iterate 1..N
+        int i = 1;
+        while (framesMap.containsKey(i)) {
+          final rectList = framesMap[i] as YamlList;
+          final x = (rectList[0] as num).toDouble();
+          final y = (rectList[1] as num).toDouble();
+          final w = (rectList[2] as num).toDouble();
+          final h = (rectList[3] as num).toDouble();
+
+          sprites.add(
+            Sprite(
+              sheetImage,
+              srcPosition: Vector2(x, y),
+              srcSize: Vector2(w, h),
+            ),
+          );
+          i++;
+        }
+
+        if (sprites.isNotEmpty) {
+          anim = SpriteAnimation.spriteList(sprites, stepTime: 0.15);
+          _animationCache[cacheKey] = anim;
+          return anim;
+        }
+      } catch (e) {
+        print('Error loading sprite from config [$cacheKey]: $e');
+      }
+    }
+
+    // 2. Legacy File-based Fallback
+    String basePath;
+    if (stateName == 'walk') {
+      basePath = 'assets/images/sprites/duck/walk/duck-walk-$dirName-';
+    } else {
+      // Legacy structure or other states if they exist
+      basePath =
+          'assets/images/sprites/duck/$stateName/$dirName/duck-$stateName-$dirName-';
+    }
+
     final frame1Path = '${basePath}1.png';
 
     List<String> validPaths = [];
     if (_assetManifest.listAssets().contains(frame1Path)) {
-      // Found! Collect frames 1..6 (or more?)
+      // Found! Collect frames
       int frame = 1;
       while (true) {
         final p = '$basePath$frame.png';
@@ -153,8 +227,6 @@ class DuckComponent extends SpriteAnimationComponent
       }
     }
 
-    SpriteAnimation anim;
-
     if (validPaths.isNotEmpty) {
       // Load sprites
       final sprites = await Future.wait(
@@ -164,8 +236,7 @@ class DuckComponent extends SpriteAnimationComponent
       );
       anim = SpriteAnimation.spriteList(sprites, stepTime: 0.15);
     } else {
-      // 2. Fallbacks
-
+      // Fallbacks
       if (stateName == 'stun') {
         // Stun: Shaking Orange Square
         final s1 = await _generateFallbackSprite(
@@ -180,7 +251,7 @@ class DuckComponent extends SpriteAnimationComponent
         );
         anim = SpriteAnimation.spriteList([s1, s2], stepTime: 0.1);
       } else {
-        // Procedural single frame
+        // Procedural single frame (White Square for Walk)
         ui.Color c = const ui.Color(0xFFFFFFFF); // Default white (walk)
         int size = 30;
 

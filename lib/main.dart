@@ -46,17 +46,24 @@ class GameScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      body: GameWidget(
-        game: DuckAttackGame(ref),
-        overlayBuilderMap: {
-          'hud': (BuildContext context, DuckAttackGame game) {
-            return const Hud();
-          },
-          'game_over': (BuildContext context, DuckAttackGame game) {
-            return GameOverDialog(game: game);
-          },
+      body: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          Navigator.of(context).pushReplacementNamed('/menu');
         },
-        initialActiveOverlays: const ['hud'],
+        child: GameWidget(
+          game: DuckAttackGame(ref),
+          overlayBuilderMap: {
+            'hud': (BuildContext context, DuckAttackGame game) {
+              return const Hud();
+            },
+            'game_over': (BuildContext context, DuckAttackGame game) {
+              return GameOverDialog(game: game);
+            },
+          },
+          initialActiveOverlays: const ['hud'],
+        ),
       ),
     );
   }

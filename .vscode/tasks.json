@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Sprite Tool",
+            "type": "flutter",
+            "command": "flutter",
+            "args": [
+                "run",
+                "-t",
+                "lib/tools/sprite_tool/sprite_tool.dart",
+                "-d",
+                "linux"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        }
+    ]
+}

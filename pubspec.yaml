@@ -25,84 +25,21 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  image: ^4.7.2
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
-    - assets/images/grandma/
-    - assets/images/bread/
-    - assets/images/duck/
-    - assets/images/duck/walk/
-    - assets/images/duck/walk/e/
-    - assets/images/duck/walk/s/
-    - assets/images/duck/walk/nne/
-    - assets/images/duck/walk/sw/
-    - assets/images/duck/walk/ssw/
-    - assets/images/duck/walk/ne/
-    - assets/images/duck/walk/wsw/
-    - assets/images/duck/walk/ese/
-    - assets/images/duck/walk/n/
-    - assets/images/duck/walk/ene/
-    - assets/images/duck/walk/nnw/
-    - assets/images/duck/walk/sse/
-    - assets/images/duck/walk/w/
-    - assets/images/duck/walk/wnw/
-    - assets/images/duck/walk/se/
-    - assets/images/duck/walk/nw/
-    - assets/images/duck/fly/
-    - assets/images/duck/fly/e/
-    - assets/images/duck/fly/s/
-    - assets/images/duck/fly/nne/
-    - assets/images/duck/fly/sw/
-    - assets/images/duck/fly/ssw/
-    - assets/images/duck/fly/ne/
-    - assets/images/duck/fly/wsw/
-    - assets/images/duck/fly/ese/
-    - assets/images/duck/fly/n/
-    - assets/images/duck/fly/ene/
-    - assets/images/duck/fly/nnw/
-    - assets/images/duck/fly/sse/
-    - assets/images/duck/fly/w/
-    - assets/images/duck/fly/wnw/
-    - assets/images/duck/fly/se/
-    - assets/images/duck/fly/nw/
-    - assets/images/duck/stun/
-    - assets/images/duck/stun/e/
-    - assets/images/duck/stun/s/
-    - assets/images/duck/stun/nne/
-    - assets/images/duck/stun/sw/
-    - assets/images/duck/stun/ssw/
-    - assets/images/duck/stun/ne/
-    - assets/images/duck/stun/wsw/
-    - assets/images/duck/stun/ese/
-    - assets/images/duck/stun/n/
-    - assets/images/duck/stun/ene/
-    - assets/images/duck/stun/nnw/
-    - assets/images/duck/stun/sse/
-    - assets/images/duck/stun/w/
-    - assets/images/duck/stun/wnw/
-    - assets/images/duck/stun/se/
-    - assets/images/duck/stun/nw/
-    - assets/images/duck/eat/
-    - assets/images/duck/eat/e/
-    - assets/images/duck/eat/s/
-    - assets/images/duck/eat/nne/
-    - assets/images/duck/eat/sw/
-    - assets/images/duck/eat/ssw/
-    - assets/images/duck/eat/ne/
-    - assets/images/duck/eat/wsw/
-    - assets/images/duck/eat/ese/
-    - assets/images/duck/eat/n/
-    - assets/images/duck/eat/ene/
-    - assets/images/duck/eat/nnw/
-    - assets/images/duck/eat/sse/
-    - assets/images/duck/eat/w/
-    - assets/images/duck/eat/wnw/
-    - assets/images/duck/eat/se/
-    - assets/images/duck/eat/nw/
+    - assets/images/sprites/
+    - assets/images/sprites/grandma/
+    - assets/images/sprites/bread/
+    - assets/images/sprites/duck/
+    - assets/images/sprites/duck/walk/
+
     - assets/config.yaml
+    - assets/images/sprites/sprites.yaml
     - assets/about.txt
 
 flutter_launcher_icons:
