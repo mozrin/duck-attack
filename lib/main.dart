@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
 void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
@@ -18,24 +20,28 @@ void main() async {
   runApp(const ProviderScope(child: DuckAttackApp()));
 }
 
+final _router = GoRouter(
+  routes: [
+    GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
+    GoRoute(path: '/menu', builder: (context, state) => const MainMenuScreen()),
+    GoRoute(path: '/game', builder: (context, state) => const GameScreen()),
+    GoRoute(path: '/config', builder: (context, state) => const ConfigScreen()),
+    GoRoute(path: '/about', builder: (context, state) => const AboutScreen()),
+  ],
+);
+
 class DuckAttackApp extends ConsumerWidget {
   const DuckAttackApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Duck Attack',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4CAF50)),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
-      routes: {
-        '/menu': (context) => const MainMenuScreen(),
-        '/game': (context) => const GameScreen(),
-        '/config': (context) => const ConfigScreen(),
-        '/about': (context) => const AboutScreen(),
-      },
+      routerConfig: _router,
     );
   }
 }
@@ -50,7 +56,7 @@ class GameScreen extends ConsumerWidget {
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
-          Navigator.of(context).pushReplacementNamed('/menu');
+          context.go('/menu');
         },
         child: GameWidget(
           game: DuckAttackGame(ref),

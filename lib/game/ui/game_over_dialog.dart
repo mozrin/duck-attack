@@ -1,5 +1,6 @@
 import 'package:duck_attack/game/duck_attack_game.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class GameOverDialog extends StatelessWidget {
   const GameOverDialog({super.key, required this.game});
@@ -34,11 +35,9 @@ class GameOverDialog extends StatelessWidget {
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {
-                  // Exit logic - for now, pop to splash/main or just exit app?
-                  // Design said "Exit app or return to splash".
-                  // Since we are in an overlay, we might need context or game ref to navigate.
-                  // Flame's GameWidget uses Navigator if available.
-                  Navigator.of(context).pushReplacementNamed('/');
+                  // Exit logic
+                  game.reset();
+                  context.go('/menu');
                 },
                 child: const Text('Exit'),
               ),

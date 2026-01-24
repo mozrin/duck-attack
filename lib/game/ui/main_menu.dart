@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -28,18 +29,17 @@ class MainMenuScreen extends StatelessWidget {
                 // Buttons
                 _MenuButton(
                   label: 'PLAY',
-                  onPressed: () =>
-                      Navigator.of(context).pushReplacementNamed('/game'),
+                  onPressed: () => context.go('/game'),
                   color: Colors.green,
                 ),
                 _MenuButton(
                   label: 'CONFIG',
-                  onPressed: () => Navigator.of(context).pushNamed('/config'),
+                  onPressed: () => context.push('/config'),
                   color: Colors.orange,
                 ),
                 _MenuButton(
                   label: 'ABOUT',
-                  onPressed: () => Navigator.of(context).pushNamed('/about'),
+                  onPressed: () => context.push('/about'),
                   color: Colors.blue,
                 ),
                 _MenuButton(

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen> {
       // Then wait another 3 seconds for app splash
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
-          Navigator.of(context).pushReplacementNamed('/menu');
+          context.go('/menu');
         }
       });
     });
